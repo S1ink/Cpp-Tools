@@ -1,9 +1,9 @@
 #include "http.h"
 
 const std::unordered_map<std::string, Version> Versions::typemap = {
-        {"HTTP/1.0", Version::HTTP_1_0},
-        {"HTTP/1.1", Version::HTTP_1_1},
-        {"HTTP/2.0", Version::HTTP_2_0},
+    {"HTTP/1.0", Version::HTTP_1_0},
+    {"HTTP/1.1", Version::HTTP_1_1},
+    {"HTTP/2.0", Version::HTTP_2_0},
 };
 const std::unordered_map<Version, std::string> Versions::stringmap = {
     {Version::HTTP_1_0, "HTTP/1.0"},
