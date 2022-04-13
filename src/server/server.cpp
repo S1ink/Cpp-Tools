@@ -34,7 +34,7 @@ void HttpServer::ex_lerror(const char* message) {
     exit(errno);
 }
 
-std::string HttpServer::HttpHandler::find(std::string&& root, const std::string& item) {
+std::string HttpServer::findResource(std::string&& root, const std::string& item) {
     std::string path = std::move(root);
     if (item == "/") {
         path.append("/index.html");
@@ -44,6 +44,10 @@ std::string HttpServer::HttpHandler::find(std::string&& root, const std::string&
         path.append(item);
     }
     return path;
+}
+std::string HttpServer::supplyResource(const std::string& path) {
+    std::ifstream reader(path.c_str(), std::ios::binary);
+    return std::string((std::istreambuf_iterator<char>(reader)), (std::istreambuf_iterator<char>()));
 }
 const char* HttpServer::HttpHandler::safeMime(const char* path) {
     const char* mime = getMegaMimeType(path);
@@ -57,7 +61,7 @@ void HttpServer::HttpHandler::respond(const int socket, const char* ip, const in
     Request req(input); //CHECK FOR VALID HTTP
     HeaderList headers;
     std::ifstream reader;
-    std::string body, path = this->rfind(that->root, req.getResource());
+    std::string body, path = this->rlookup(that->root, req.getResource());
 
     this->that->formatter.onRequest(socket, ip, readlen, &req, path.c_str());   //change Request so that we can pass a const in here
 
@@ -86,7 +90,7 @@ void HttpServer::HttpHandler::respond(const int socket, const char* ip, const in
             this->response.update(Code::OK, headers, body);
         }
         else {  //send 404
-            reader.open(this->rfind(that->root, "/error.html"));
+            reader.open(this->rlookup(that->root, "/error.html"));
             if (reader.is_open()) { //check if error page exists
                 body = std::string((std::istreambuf_iterator<char>(reader)), (std::istreambuf_iterator<char>()));
                 replace(body, "{{code}}", Codes::getString(Code::NOT_FOUND).c_str());
@@ -97,7 +101,7 @@ void HttpServer::HttpHandler::respond(const int socket, const char* ip, const in
             else {  //if not send plain text
                 body = "{Error page not found} - Error: 404 Not Found";
                 headers.add(
-                    Segment("Content - Type", "text / plain")
+                    Segment("Content-Type", "text/plain")
                 );
             }
             headers.add({
@@ -105,7 +109,6 @@ void HttpServer::HttpHandler::respond(const int socket, const char* ip, const in
                 {"Connection", "close"},
                 });
             this->response.update(Code::NOT_FOUND, headers, body);
-
         }
         break;
     }
@@ -122,7 +125,7 @@ void HttpServer::HttpHandler::respond(const int socket, const char* ip, const in
             this->response.update(Code::OK, headers);
         }
         else {  //else send 404
-            reader.open(this->rfind(that->root, "/error.html"));
+            reader.open(this->rlookup(that->root, "/error.html"));
             if (reader.is_open()) { //check error page exists
                 body = std::string((std::istreambuf_iterator<char>(reader)), (std::istreambuf_iterator<char>()));
                 replace(body, "{{code}}", Codes::getString(Code::NOT_FOUND).c_str());
@@ -153,7 +156,7 @@ void HttpServer::HttpHandler::respond(const int socket, const char* ip, const in
     case Method::PUT:
     case Method::TRACE: //methods not supported
     {
-        reader.open(this->rfind(that->root, "/error.html"));
+        reader.open(this->rlookup(that->root, "/error.html"));
         if (reader.is_open()) { //check if page exists
             body = std::string((std::istreambuf_iterator<char>(reader)), (std::istreambuf_iterator<char>()));
             replace(body, "{{code}}", Codes::getString(Code::METHOD_NOT_ALLOWED).c_str());
@@ -177,7 +180,7 @@ void HttpServer::HttpHandler::respond(const int socket, const char* ip, const in
     }
     case Method::ERROR: //method is the first thing that is parsed, so an error means that the request was invalid
     {
-        reader.open(this->rfind(that->root, "/error.html"));
+        reader.open(this->rlookup(that->root, "/error.html"));
         if (reader.is_open()) { //check if page exists
             body = std::string((std::istreambuf_iterator<char>(reader)), (std::istreambuf_iterator<char>()));
             replace(body, "{{code}}", Codes::getString(Code::BAD_REQUEST).c_str());
@@ -200,7 +203,7 @@ void HttpServer::HttpHandler::respond(const int socket, const char* ip, const in
     }
     default:    //defaults to 501 NOT IMPLEMENTED
     {
-        reader.open(this->rfind(that->root, "/error.html"));
+        reader.open(this->rlookup(that->root, "/error.html"));
         if (reader.is_open()) { //check if page exists
             body = std::string((std::istreambuf_iterator<char>(reader)), (std::istreambuf_iterator<char>()));
             replace(body, "{{code}}", Codes::getString(Code::NOT_IMPLEMENTED).c_str());
@@ -259,10 +262,12 @@ HttpServer::HttpServer(
     const olstream& logger,
     const char* root,
     std::string(*rmapper)(std::string&&, const std::string&),
+    std::string(*rsupplier)(const std::string&),
     std::atomic<bool>* control,
     Version version,
+    const char* port,
     int max_clients
-) : BaseServer(NULL, "http", max_clients), root(root), version(version), handler(this, rmapper), formatter(this) {
+) : BaseServer(NULL, port, max_clients), root(root), version(version), handler(this, rmapper, rsupplier), formatter(this) {
     if (control != nullptr) {
         this->online = control;
     }
@@ -278,10 +283,12 @@ HttpServer::HttpServer(
     olstream&& logger,
     const char* root,
     std::string(*rmapper)(std::string&&, const std::string&),
+    std::string(*rsupplier)(const std::string&),
     std::atomic<bool>* control,
     Version version,
+    const char* port,
     int max_clients
-) : BaseServer(NULL, "http", max_clients), root(root), version(version), handler(this, rmapper), formatter(this) {
+) : BaseServer(NULL, port, max_clients), root(root), version(version), handler(this, rmapper, rsupplier), formatter(this) {
     if (control != nullptr) {
         this->online = control;
     }

@@ -20,6 +20,7 @@
 #undef ERROR
 #endif
 
+
 class HttpServer : public BaseServer {
 protected:
 	std::atomic<bool> l_online;	//backup for if external control not specified
@@ -38,15 +39,18 @@ protected:
 	private:
 		HttpServer* that;	//surrounding instance
 	protected:
-		std::string(*rfind)(std::string&&, const std::string&);
+		std::string(*rlookup)(std::string&&, const std::string&);	// resource lookup function
+		std::string(*rsupply)(const std::string&);					// resource supplier (adds parsing/inserting ability)
 		Response response;
 		//Request request;
 	public:
-		static std::string find(std::string&& root, const std::string& item);
 		static const char* safeMime(const char* path);
 
-		HttpHandler(HttpServer* outer, std::string(*finder)(std::string&&, const std::string&) = find) :
-			that(outer), rfind(finder), response(that->version)/*, request(that->version)*/ {}
+		HttpHandler(
+			HttpServer* outer,
+			std::string(*finder)(std::string&&, const std::string&) = HttpServer::findResource,
+			std::string(*supplier)(const std::string&) = HttpServer::supplyResource
+		) : that(outer), rlookup(finder), rsupply(supplier), response(that->version)/*, request(that->version)*/ {}
 
 		virtual void respond(const int socket, const char* ip, const int readlen, const std::string& input);	//server
 		//void request(const std::string& input, std::ostream& output, bool init = false);	//client
@@ -77,17 +81,21 @@ public:
 	HttpServer(
 		const olstream& logger,
 		const char* root = progdir.getDir(),
-		std::string(*rmapper)(std::string&&, const std::string&) = HttpHandler::find,
+		std::string(*rmapper)(std::string&&, const std::string&) = findResource,
+		std::string(*rsupplier)(const std::string&) = supplyResource,
 		std::atomic<bool>* control = nullptr,
 		Version version = Version::HTTP_1_1,
+		const char* port = "http",
 		int max_clients = 5
 	);
 	HttpServer(
 		olstream&& logger = &std::cout,
 		const char* root = progdir.getDir(),
-		std::string(*rmapper)(std::string&&, const std::string&) = HttpHandler::find,
+		std::string(*rmapper)(std::string&&, const std::string&) = findResource,
+		std::string(*rsupplier)(const std::string&) = supplyResource,
 		std::atomic<bool>* control = nullptr,
 		Version version = Version::HTTP_1_1,
+		const char* port = "http",
 		int max_clients = 5
 	);
 
@@ -105,9 +113,14 @@ public:
 	virtual void s_serve1_0();
 	virtual void s_serve1_1();
 	virtual void serve_test();
+
+	static std::string findResource(std::string&& root, const std::string& item);
+	static std::string supplyResource(const std::string& path);
+
 private:
 	HttpHandler handler;
 	Formatter formatter;
+
 };
 
 //*****************************************************************************************
@@ -120,8 +133,11 @@ protected:
 	protected:
 		HttpServer2<format_t>* d_that;	//surrounding derived instance
 	public:
-		HttpHandler2(HttpServer2<format_t>* outer, std::string(*finder)(std::string&&, const std::string&) = find) :
-			HttpHandler((HttpServer*)outer, finder), d_that(outer) {}
+		HttpHandler2(
+			HttpServer2<format_t>* outer,
+			std::string(*finder)(std::string&&, const std::string&) = HttpServer::findResource,
+			std::string(*supplier)(const std::string&) = HttpServer::supplyResource
+		) : HttpHandler((HttpServer*)outer, finder), d_that(outer) {}
 
 		void respond(const int socket, const char* ip, const int readlen, const std::string& input) override;
 	};
@@ -130,12 +146,14 @@ public:
 	HttpServer2(
 		const olstream& logger,
 		const char* root = progdir.getDir(),
-		std::string(*rmapper)(std::string&&, const std::string&) = HttpHandler::find,
+		std::string(*rmapper)(std::string&&, const std::string&) = HttpServer::findResource,
+		std::string(*rsupplier)(const std::string&) = supplyResource,
 		std::atomic<bool>* control = nullptr,
 		Version version = Version::HTTP_1_1,
+		const char* port = "http",
 		int max_clients = 5
 	) :
-		HttpServer(logger, root, rmapper, control, version, max_clients),
+		HttpServer(logger, root, rmapper, rsupplier, control, version, port, max_clients),
 		t_handler(this, rmapper), t_formatter((HttpServer*)this)
 	{
 		static_assert(std::is_base_of<HttpServer::Formatter, format_t>::value, "Custom log formatter is not derived from HttpServer::Formatter and will not work corectly");
@@ -143,12 +161,14 @@ public:
 	HttpServer2(
 		olstream&& logger = &std::cout,
 		const char* root = progdir.getDir(),
-		std::string(*rmapper)(std::string&&, const std::string&) = HttpHandler::find,
+		std::string(*rmapper)(std::string&&, const std::string&) = HttpServer::findResource,
+		std::string(*rsupplier)(const std::string&) = supplyResource,
 		std::atomic<bool>* control = nullptr,
 		Version version = Version::HTTP_1_1,
+		const char* port = "http",
 		int max_clients = 5
 	) :
-		HttpServer(logger, root, rmapper, control, version, max_clients),
+		HttpServer(logger, root, rmapper, rsupplier, control, version, port, max_clients),
 		t_handler(this, rmapper), t_formatter((HttpServer*)this)
 	{
 		static_assert(std::is_base_of<HttpServer::Formatter, format_t>::value, "Custom log formatter is not derived from HttpServer::Formatter and will not work corectly");
@@ -158,9 +178,11 @@ public:
 	void s_serve1_0() override;
 	void s_serve1_1() override;
 	void serve_test() override;
+
 private:
 	HttpHandler2 t_handler;
 	format_t t_formatter;
+
 };
 
 template<class format_t>
@@ -423,8 +445,7 @@ void HttpServer2<format_t>::s_serve1_1() {
 					}
 					getSockIp(nsock, ipbuff);
 					this->t_formatter.onConnect(nsock, ipbuff);
-				}
-				else {  //else a client fd is ready
+				} else {  //else a client fd is ready
 					if ((readlen = recv(i, buffer, sizeof(buffer), 0)) <= 0) {  //read from client fd
 						if (readlen == 0) {
 							getSockIp(i, ipbuff);
