@@ -93,12 +93,12 @@ const char* HttpServer::HttpHandler::safeMime(const char* path) {
 }
 
 void HttpServer::HttpHandler::respond(const int socket, const char* ip, const int readlen, const std::string& input, HttpFormatter* formatter) {
-    Request req(input); //CHECK FOR VALID HTTP
+    this->request_buff.parse(input);
     HeaderList headers;
     std::ifstream reader;
-    std::string body, path = std::move(this->resourceMapper(that->root, req.getResource()));
+    std::string body, path = std::move(this->resourceMapper(that->root, this->request_buff.getResource()));
 
-    formatter->onRequest(socket, ip, readlen, &req, path.c_str());   //change Request so that we can pass a const in here
+    formatter->onRequest(socket, ip, readlen, &this->request_buff, path.c_str());   //change Request so that we can pass a const in here
 
     (this->response.intHeaders())->reset();
 
@@ -106,7 +106,7 @@ void HttpServer::HttpHandler::respond(const int socket, const char* ip, const in
         Segment("Server", "Custom C++ HTTP Server (Raspberry Pi)")
     );
 
-    switch (req.getMethod()) {
+    switch (this->request_buff.getMethod()) {
     case Method::GET:   //requesting resource
     {
         reader.open(path.c_str(), std::ios::binary);    //attempt to open resource
@@ -187,8 +187,8 @@ void HttpServer::HttpHandler::respond(const int socket, const char* ip, const in
     case Method::DELETE:
     case Method::OPTIONS:
     case Method::PATCH:
-    case Method::POST:
-    case Method::PUT:
+    case Method::POST:  // POST is used when the exact url is not known, or a general action is being commanded
+    case Method::PUT:   // PUT is used when the exact url is known, and can modify prexisting objects
     case Method::TRACE: //methods not supported
     {
         reader.open(this->resourceMapper(that->root, "/error.html"));

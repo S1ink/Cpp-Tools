@@ -25,8 +25,8 @@ class HttpServer : public BaseServer {
 public:
 	class HttpHandler;
 	class HttpFormatter;
-protected:
 
+protected:
 	std::atomic<bool> l_online;		//backup for if external control not specified
 	const char* root;
 	Version version;
@@ -69,22 +69,21 @@ public:
 	};
 	class HttpHandler {
 		friend class HttpServer;
-	private:
-		HttpServer* that;	//surrounding instance
 
 	protected:
+		HttpServer* that;	//surrounding instance
 		Response response;
-		//Request request;
+		Request request_buff;
 
 		HttpHandler() = delete;
-		HttpHandler(HttpServer* outer) : that(outer), response(that->version)/*, request(that->version)*/ {}
+		HttpHandler(HttpServer* outer) : that(outer), response(that->version) {}
 		~HttpHandler() = default;
 
 		virtual std::string resourceMapper(std::string&& root, const std::string& requested);
 		//virtual std::string resourceSupplier(const std::string& path);
 
 	public:
-		HttpHandler(HttpServer& server) : that(&server), response(server.version)/*, request(that.version)*/ {}
+		HttpHandler(HttpServer& server) : that(&server), response(server.version) {}
 
 		static const char* safeMime(const char* path);
 		virtual void respond(const int socket, const char* ip, const int readlen, const std::string& input, HttpFormatter* formatter);	//server
@@ -111,6 +110,9 @@ public:
 		int max_clients = 5
 	);
 	~HttpServer() = default;
+
+	inline const char* getRoot() const { return this->root; }
+	inline Version getVersion() const { return this->version; }
 
 	void setLog(const std::ios::openmode modes);
 	void setLog(const char* file);
