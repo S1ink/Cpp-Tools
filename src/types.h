@@ -1,29 +1,57 @@
-// #pragma once
+#pragma once
 
-// #include <cstdint>
-// #include <type_traits>
+#include <type_traits>
+#include <atomic>
+#include <deque>
 
-// struct Percent {
-//     template<typename num_t>
-//     Percent(num_t num) {}
 
-//     template<typename num_t>
-//     void set(num_t num) {
-//         static_assert(std::is_arithmetic<num_t>::value, "Num type must be numeric");
-//         if(std::is_signed<num_t>::value) {
-//             bits = (0b1 << 8 & num ? )
-//         } else {
-//             bits = (num & m_64);    // first 6 bits, range up to 64
-//         }
-//     }
+template <template <typename...> class C, typename...Ts>
+std::true_type is_base_of_template_impl(const C<Ts...>*);
+template <template <typename...> class C>
+std::false_type is_base_of_template_impl(...);
+template <typename T, template <typename...> class C>
+using is_base_of_template = decltype(is_base_of_template_impl<C>(std::declval<T*>()));	// assert inheritance of template class
 
-// private:
-//     static const uint16_t
-//         m_64 = 0b111111,
-//         m_16 = 0b1111,
-//         m_4 = 0b11;
+template <template <size_t> class C, size_t S>
+std::true_type is_base_of_num_template_impl(const C<S>*);
+template <template <size_t...> class C>
+std::false_type is_base_of_num_template_impl(...);
+template <typename T, template <size_t> class C>
+using is_base_of_num_template = decltype(is_base_of_num_template_impl<C>(std::declval<T*>()));	// assert inheritance of size templated class
 
-//     //static const uint16_t test = m_1 | m_2 | m_3 | m_4;
 
-//     uint16_t bits;
-// };
+
+template<class derived>
+class Instanced {
+	typedef struct Instanced<derived>	This_t;
+public:
+	inline explicit Instanced() {
+		static_assert(std::is_base_of<This_t, derived>::value, "Template paramter (derived) must inherit from Instanced<derived> for CRTP.");
+		if(This_t::deleted.empty()) {
+			this->instance = This_t::highest = This_t::highest + 1;
+		} else {
+			this->instance = This_t::deleted.front();
+			This_t::deleted.pop_front();
+		}
+	}
+	inline virtual ~Instanced() {
+		This_t::deleted.push_back(this->instance);
+	}
+
+	inline uint32_t getInst() const { return this->instance; }
+
+	inline static uint32_t getInstances() { return This_t::highest - This_t::deleted.size(); }
+	template<class derived_t>
+	inline static uint32_t getInstances() {
+		static_assert(std::is_base_of<Instanced<derived_t>, derived>::value, "Template parameter (derived_t) must inherit from Instanced<derived>.");
+		return Instanced<derived_t>::getInstances();
+	}
+
+
+private:
+	static inline std::atomic<uint32_t> highest{0};
+	static inline std::deque<uint32_t> deleted;
+	const uint32_t instance;
+
+
+};
