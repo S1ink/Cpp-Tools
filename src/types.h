@@ -25,12 +25,11 @@ template<class derived>
 class Instanced {
 	typedef struct Instanced<derived>	This_t;
 public:
-	inline explicit Instanced() {
+	inline explicit Instanced() : instance(This_t::deleted.empty() ? This_t::highest + 1 : This_t::deleted.front()) {
 		static_assert(std::is_base_of<This_t, derived>::value, "Template paramter (derived) must inherit from Instanced<derived> for CRTP.");
 		if(This_t::deleted.empty()) {
-			this->instance = This_t::highest = This_t::highest + 1;
+			This_t::highest++;
 		} else {
-			this->instance = This_t::deleted.front();
 			This_t::deleted.pop_front();
 		}
 	}
@@ -47,11 +46,12 @@ public:
 		return Instanced<derived_t>::getInstances();
 	}
 
+protected:
+	const uint32_t instance;
 
 private:
 	static inline std::atomic<uint32_t> highest{0};
 	static inline std::deque<uint32_t> deleted;
-	const uint32_t instance;
 
 
 };
