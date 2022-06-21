@@ -14,7 +14,8 @@ AR := $(CROSS_PREFIX)$(AR)
 OS := windows
 RM-R := del /s
 CP := copy
-DIR := \\ 
+DIR := \\
+
 else #native
 OS := native
 RM-R := rm -r
@@ -30,7 +31,7 @@ HEADER_DIR := $(OUT_DIR)$(DIR)include
 
 LNAME := cpptools
 LIBSTATIC := $(LIB_DIR)/lib$(LNAME).a
-LIBSHARED := $(LIB_DIR)/lib$(LNAME).so	#currently some code uses singletons so this should not be used
+LIBSHARED := $(LIB_DIR)/lib$(LNAME).so
 
 SRCS := $(call rwildcard,$(SRC_DIR)/,*.cpp *.c)
 STATIC_OBJS := $(SRCS:$(SRC_DIR)/%=$(OBJ_DIR)/%.o)
