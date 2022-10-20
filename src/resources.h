@@ -4,6 +4,7 @@
 //#define _RESOURCES
 
 #define CHRONO std::chrono
+#define HRC std::chrono::high_resolution_clock
 #define CE_STR constexpr char const*
 
 constexpr char newline = 10;	// ('\n')
@@ -26,10 +27,3 @@ CE_STR endline =
 #endif
 
 typedef unsigned int uint;
-
-//#endif
-
-//char32_t tr_end = U'└';
-//char32_t tr_cont = U'│';
-
-//U"└─"
