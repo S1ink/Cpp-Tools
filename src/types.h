@@ -21,12 +21,12 @@ using is_base_of_num_template = decltype(is_base_of_num_template_impl<C>(std::de
 
 
 
-template<class derived>
+template<class derived_t>
 class Instanced {
-	typedef struct Instanced<derived>	This_t;
+	typedef struct Instanced<derived_t>	This_t;
 public:
 	inline explicit Instanced() : instance(This_t::deleted.empty() ? This_t::highest + 1 : This_t::deleted.front()) {
-		static_assert(std::is_base_of<This_t, derived>::value, "Template paramter (derived) must inherit from Instanced<derived> for CRTP.");
+		static_assert(std::is_base_of<This_t, derived_t>::value, "Template paramter (derived_t) must inherit from Instanced<derived_t> for CRTP.");
 		if(This_t::deleted.empty()) {
 			This_t::highest++;
 		} else {
@@ -40,10 +40,10 @@ public:
 	inline uint32_t getInst() const { return this->instance; }
 
 	inline static uint32_t getInstances() { return This_t::highest - This_t::deleted.size(); }
-	template<class derived_t>
+	template<class type>
 	inline static uint32_t getInstances() {
-		static_assert(std::is_base_of<Instanced<derived_t>, derived>::value, "Template parameter (derived_t) must inherit from Instanced<derived>.");
-		return Instanced<derived_t>::getInstances();
+		static_assert(std::is_base_of<Instanced<type>, type>::value, "Template parameter (type) must inherit from Instanced<type>.");
+		return Instanced<type>::getInstances();
 	}
 
 protected:
