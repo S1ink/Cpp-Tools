@@ -5,19 +5,49 @@
 #include <deque>
 
 
-template <template <typename...> class C, typename...Ts>
-std::true_type is_base_of_template_impl(const C<Ts...>*);
-template <template <typename...> class C>
-std::false_type is_base_of_template_impl(...);
-template <typename T, template <typename...> class C>
-using is_base_of_template = decltype(is_base_of_template_impl<C>(std::declval<T*>()));	// assert inheritance of template class
+template<
+	typename, typename>
+struct is_same_template_base : std::false_type{};
+template<
+	template<typename...> typename T,
+	typename... A, typename... B>
+struct is_same_template_base<T<A...>, T<B...>> : std::true_type{};
 
-template <template <size_t> class C, size_t S>
-std::true_type is_base_of_num_template_impl(const C<S>*);
-template <template <size_t...> class C>
-std::false_type is_base_of_num_template_impl(...);
-template <typename T, template <size_t> class C>
-using is_base_of_num_template = decltype(is_base_of_num_template_impl<C>(std::declval<T*>()));	// assert inheritance of size templated class
+template<
+	template<typename...> typename,
+	template<typename...> typename>
+struct is_same_template : std::false_type{};
+template<
+	template<typename...> typename T>
+struct is_same_template<T, T> : std::true_type{};
+
+template<
+	template<typename...> typename, typename>
+struct is_same_template_mixed : std::false_type{};
+template<
+	template<typename...> typename T, typename... A>
+struct is_same_template_mixed<T, T<A...>> : std::true_type{};
+
+
+template<
+	template<typename...> class C, typename...Ts
+> std::true_type is_base_of_template_impl(const C<Ts...>*);
+template<
+	template<typename...> class C
+> std::false_type is_base_of_template_impl(...);
+template<
+	typename T, template<typename...> class C
+> using is_base_of_template = decltype(is_base_of_template_impl<C>(std::declval<T*>()));	// assert inheritance of template class
+
+template
+	<template <size_t> class C, size_t S
+> std::true_type is_base_of_num_template_impl(const C<S>*);
+template<
+	template <size_t...> class C
+> std::false_type is_base_of_num_template_impl(...);
+template<
+	typename T, template <size_t> class C
+> using is_base_of_num_template = decltype(is_base_of_num_template_impl<C>(std::declval<T*>()));	// assert inheritance of size templated class
 
 
 
