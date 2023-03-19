@@ -73,7 +73,7 @@ void SigHandle::sigSet(__sigaction_t exit, __sigaction_t ignore) {
     }
 }
 void SigHandle::sigSet(bool adv) {
-    struct sigaction action_ignore, action_exit;    
+    struct sigaction action_ignore, action_exit;
     sigemptyset(&(action_ignore.sa_mask));
     sigemptyset(&(action_exit.sa_mask));
     if (adv) {

@@ -6,14 +6,6 @@
 
 
 template<
-	typename, typename>
-struct is_same_template_base : std::false_type{};
-template<
-	template<typename...> typename T,
-	typename... A, typename... B>
-struct is_same_template_base<T<A...>, T<B...>> : std::true_type{};
-
-template<
 	template<typename...> typename,
 	template<typename...> typename>
 struct is_same_template : std::false_type{};
@@ -22,11 +14,23 @@ template<
 struct is_same_template<T, T> : std::true_type{};
 
 template<
+	typename, typename>
+struct is_same_template_base : std::false_type{};
+template<
+	template<typename...> typename T,
+	typename... A, typename... B>
+struct is_same_template_base<T<A...>, T<B...>> : std::true_type{};
+
+template<
 	template<typename...> typename, typename>
 struct is_same_template_mixed : std::false_type{};
 template<
 	template<typename...> typename T, typename... A>
 struct is_same_template_mixed<T, T<A...>> : std::true_type{};
+
+
+template<template<typename...> typename T, template<typename...> typename... Ts>
+using any_same_template = std::disjunction<is_same_template<T, Ts>...>;
 
 
 template<
