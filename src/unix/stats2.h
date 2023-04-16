@@ -77,6 +77,11 @@ public:
 	void inlineAverageAll(std::chrono::duration<rep,period>, std::vector<float>&);
 
 	static float temp();
+	static float temp_vcmd();
+	static float freq();
+	static float freq_vcmd();
+	static int throttlebits();
+	static float volts();
 
 
 private:

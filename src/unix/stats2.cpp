@@ -75,9 +75,44 @@ void CoreStats::fromLastAll(std::vector<float>& out) {
 }
 
 float CoreStats::temp() {
-	float systemp;
-	std::ifstream thermal("/sys/class/thermal/thermal_zone0/temp");
-	thermal >> systemp;
-	thermal.close();
-	return (systemp / 1000.f);
+	float value;
+	std::ifstream file("/sys/class/thermal/thermal_zone0/temp");
+	file >> value;
+	file.close();
+	return (value / 1000.f);
+}
+float CoreStats::temp_vcmd() {
+	float val;
+	FILE* fpipe = popen("vcgencmd measure_temp", "r");
+	if(fscanf(fpipe, "temp=%f'C", &val) <= 0) { val = 0.f; }
+	pclose(fpipe);
+	return val;
+}
+float CoreStats::freq() {
+	float value;
+	std::ifstream file("/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq");
+	file >> value;
+	file.close();
+	return value * 1000.f;
+}
+float CoreStats::freq_vcmd() {
+	unsigned int val;
+	FILE* fpipe = popen("vcgencmd measure_clock arm", "r");
+	if(fscanf(fpipe, "frequency(%*u)=%u", &val) <= 0) { val = 0; }
+	pclose(fpipe);
+	return (float)(val);
+}
+int CoreStats::throttlebits() {
+	int val;
+	FILE* fpipe = popen("vcgencmd get_throttled", "r");
+	if(fscanf(fpipe, "throttled=%x", &val) <= 0) { val = 0; }
+	pclose(fpipe);
+	return val;
+}
+float CoreStats::volts() {
+	float val;
+	FILE* fpipe = popen("vcgencmd measure_volts core", "r");
+	if(fscanf(fpipe, "volt=%fV", &val) <= 0) { val = 0.f; }
+	pclose(fpipe);
+	return val;
 }
