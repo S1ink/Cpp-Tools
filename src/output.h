@@ -89,7 +89,7 @@ public:
 			this->file.close();
 		}
 		else {
-			this->streamGuard() << item;
+			(this->streamGuard() << item).flush();
 		}
 		return *this;
 	}

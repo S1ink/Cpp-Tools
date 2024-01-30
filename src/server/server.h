@@ -4,6 +4,7 @@
 #include <string>
 #include <fstream>
 #include <atomic>
+#include <thread>
 
 #include "http.h"
 #include "mimetype.h"
@@ -112,6 +113,7 @@ public:
 	~HttpServer() = default;
 
 	inline const char* getRoot() const { return this->root; }
+	inline const char* getPort() const { return this->port; }
 	inline Version getVersion() const { return this->version; }
 
 	void setLog(const std::ios::openmode modes);
@@ -131,11 +133,11 @@ public:
 	template<class handler_t = HttpHandler, class formatter_t = HttpFormatter>
 	void serve1_1();
 	template<class handler_t = HttpHandler, class formatter_t = HttpFormatter>
-	void serveThread();
+	std::thread serveThread();
 	template<class handler_t = HttpHandler, class formatter_t = HttpFormatter>
-	void serveThread1_0();
+	std::thread serveThread1_0();
 	template<class handler_t = HttpHandler, class formatter_t = HttpFormatter>
-	void serveThread1_1();
+	std::thread serveThread1_1();
 
 
 };

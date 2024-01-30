@@ -34,10 +34,10 @@ typedef int SOCK_T;
 
 class BaseServer {
 private:
-	const char* ip, * port;
-	bool reuse;
 	int family, socktype, flags, connections;
+	bool reuse;
 protected:
+	const char* ip, * port;
 	//friend class http::HttpServer;
 	addrinfo* list;
 	SOCK_T sockmain;

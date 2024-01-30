@@ -49,7 +49,11 @@ void HttpServer::HttpFormatter::update(HttpServer* outer) {
 }
 
 void HttpServer::HttpFormatter::onServerStart() {
-    ((((this->that->logs <<= dateStamp()) <= " : Webserver resources initialized - beginning to serve [") <= Versions::getString(this->that->version)) < "]\n\n");
+    (((((((this->that->logs <<= dateStamp()) <= 
+        " : Webserver resources initialized. Serving [") <=
+        Versions::getString(this->that->version)) <= "]...\n\tAt Root {") <=
+        this->that->getRoot()) <= "}\n\tOn port {") <=
+        this->that->getPort()) < "}\n\n";
 }
 void HttpServer::HttpFormatter::onConnect(int fd, const char* ip) {
     ((((this->that->logs <<= dateStamp()) <= " : Got connection from [") <= ip) < "]\n");

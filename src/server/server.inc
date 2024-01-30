@@ -160,27 +160,24 @@ void HttpServer::serve1_1() {
 }
 
 template<class handler_t, class formatter_t>
-void HttpServer::serveThread() {
+std::thread HttpServer::serveThread() {
 	switch (this->version) {
     case Version::HTTP_1_0:
-        std::thread(HttpServer::serveWorker1_0<handler_t, formatter_t>, this).detach();
-        break;
+        return std::thread(HttpServer::serveWorker1_0<handler_t, formatter_t>, this);
     case Version::HTTP_1_1:
-        std::thread(HttpServer::serveWorker1_1<handler_t, formatter_t>, this).detach();
-        break;
+        return std::thread(HttpServer::serveWorker1_1<handler_t, formatter_t>, this);
     case Version::HTTP_2_0: //fall back to 1.1 but also print warning
 		this->logs << "HTTP version (2.0) not supported - utilized fallback to HTTP/1.1\n";
-        std::thread(HttpServer::serveWorker1_1<handler_t, formatter_t>, this).detach();
-        break;
+        return std::thread(HttpServer::serveWorker1_1<handler_t, formatter_t>, this);
     default:
         this->logs << "HTTP version not supported - failed to start server\n";
     }
 }
 template<class handler_t, class formatter_t>
-void HttpServer::serveThread1_0() {
-	std::thread(HttpServer::serveWorker1_0<handler_t, formatter_t>, this).detach();
+std::thread HttpServer::serveThread1_0() {
+	return std::thread(HttpServer::serveWorker1_0<handler_t, formatter_t>, this);
 }
 template<class handler_t, class formatter_t>
-void HttpServer::serveThread1_1() {
-	std::thread(HttpServer::serveWorker1_1<handler_t, formatter_t>, this).detach();
+std::thread HttpServer::serveThread1_1() {
+	return std::thread(HttpServer::serveWorker1_1<handler_t, formatter_t>, this);
 }

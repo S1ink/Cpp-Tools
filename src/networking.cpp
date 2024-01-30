@@ -12,7 +12,7 @@ int BaseServer::initDll() {
 #endif
 
 BaseServer::BaseServer(const char* ip, const char* port, int connections, bool reusable, int family, int socktype, int flags)
-    : ip(ip), port(port), reuse(reusable), family(family), socktype(socktype), flags(flags), connections(connections)
+    : family(family), socktype(socktype), flags(flags), connections(connections), reuse(reusable), ip(ip), port(port)
 {
 #ifdef _WIN32
     initDll();
